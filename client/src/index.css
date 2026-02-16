@@ -1960,3 +1960,71 @@
         transform: translate(-50%, -100%) translateY(-30px);
     }
 }
+
+/* ══ SHIELD OVERLAY ══ */
+.shield-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(30px);
+    animation: shieldIn 0.15s ease;
+}
+
+.shield-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    animation: shieldPulse 1.5s ease infinite;
+}
+
+.shield-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes shieldIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes shieldPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+/* ══ PRINT BLOCK ══ */
+@media print {
+    body * {
+        display: none !important;
+    }
+
+    body::after {
+        content: 'Adyx — Content Protected';
+        display: block;
+        font-size: 24px;
+        text-align: center;
+        padding: 100px;
+        color: #000;
+    }
+}
