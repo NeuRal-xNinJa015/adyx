@@ -1632,3 +1632,331 @@
     border-color: rgba(255, 255, 255, 0.3);
     color: rgba(255, 255, 255, 0.5);
 }
+
+/* ══ HACK THE GRID ══ */
+.htg-wrap {
+    margin-top: 28px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeUp 0.4s ease both;
+}
+
+.htg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 0 4px;
+}
+
+.htg-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.htg-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.htg-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.htg-score {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.htg-combo {
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    padding: 2px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: comboFlash 0.3s ease;
+}
+
+.htg-lives {
+    display: flex;
+    gap: 4px;
+}
+
+.htg-life {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    transition: background 0.3s;
+}
+
+.htg-life.on {
+    background: #fff;
+}
+
+.htg-grid-area {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.htg-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    width: 100%;
+    height: 100%;
+    gap: 1px;
+}
+
+.htg-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    color: transparent;
+    cursor: default;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    overflow: hidden;
+    padding: 0;
+}
+
+.htg-cell.active {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    cursor: pointer;
+    animation: cellPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.htg-cell.active:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(0.96);
+}
+
+.htg-cell.active:active {
+    transform: scale(0.9);
+}
+
+.htg-cell.urgent {
+    border-color: rgba(255, 255, 255, 0.4);
+    animation: urgentPulse 0.4s ease infinite alternate;
+}
+
+.htg-symbol {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    pointer-events: none;
+}
+
+.htg-timer-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    transform-origin: left;
+    transition: transform 0.08s linear;
+}
+
+/* Particles */
+.htg-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    pointer-events: none;
+    animation: particleBurst 0.5s ease-out forwards;
+    z-index: 10;
+}
+
+/* Score popups */
+.htg-popup {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    pointer-events: none;
+    animation: popFloat 0.7s ease-out forwards;
+    z-index: 10;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Overlays */
+.htg-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+.htg-overlay-content {
+    text-align: center;
+}
+
+.htg-start-tag {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.htg-start-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0 0 24px;
+}
+
+.htg-start-btn {
+    padding: 12px 36px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    background: #fff;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.htg-start-btn:hover {
+    background: #ddd;
+    transform: scale(1.03);
+}
+
+.htg-start-btn:active {
+    transform: scale(0.97);
+}
+
+.htg-hi {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.2);
+    margin-top: 14px;
+}
+
+.htg-over-tag {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 8px;
+}
+
+.htg-final-score {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 48px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.htg-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 24px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.htg-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 8px;
+    padding: 0 4px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.12);
+}
+
+@keyframes cellPop {
+    0% {
+        transform: scale(0.85);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes urgentPulse {
+    0% {
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    100% {
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+@keyframes comboFlash {
+    0% {
+        transform: scale(1.3);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes particleBurst {
+    0% {
+        opacity: 1;
+        transform: scale(1) translate(0, 0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0) translate(calc(var(--dx, 10) * 1px), calc(var(--dy, -20) * 1px));
+    }
+}
+
+@keyframes popFloat {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -100%) translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -100%) translateY(-30px);
+    }
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { encrypt, decrypt, encryptBinary, decryptBinary } from '../lib/crypto';
 import { connect, send, disconnect } from '../lib/socket';
-import CipherRunner from './CipherRunner';
+import HackTheGrid from './HackTheGrid';
 
 export default function ChatRoom({ roomKey, role, salt, nickname, onLeave }) {
     const [messages, setMessages] = useState([]);
@@ -257,10 +257,10 @@ export default function ChatRoom({ roomKey, role, salt, nickname, onLeave }) {
                             {!showGame ? (
                                 <button onClick={() => setShowGame(true)} className="game-toggle">
                                     <span className="game-toggle-icon">▶</span>
-                                    <span>Play Cipher Runner while you wait</span>
+                                    <span>Play Hack the Grid while you wait</span>
                                 </button>
                             ) : (
-                                <CipherRunner onStop={() => setShowGame(false)} />
+                                <HackTheGrid onStop={() => setShowGame(false)} />
                             )}
                         </div>
                     )}
