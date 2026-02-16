@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { encrypt, decrypt, encryptBinary, decryptBinary } from '../lib/crypto';
 import { connect, send, disconnect } from '../lib/socket';
+import CipherRunner from './CipherRunner';
 
 export default function ChatRoom({ roomKey, role, salt, nickname, onLeave }) {
     const [messages, setMessages] = useState([]);
@@ -12,6 +13,7 @@ export default function ChatRoom({ roomKey, role, salt, nickname, onLeave }) {
     const [showEnd, setShowEnd] = useState(false);
     const [securityAlert, setSecurityAlert] = useState(null);
     const [uploadingFile, setUploadingFile] = useState(false);
+    const [showGame, setShowGame] = useState(false);
 
     const scrollRef = useRef(null);
     const typingTimer = useRef(null);
@@ -250,6 +252,16 @@ export default function ChatRoom({ roomKey, role, salt, nickname, onLeave }) {
                                 <span /><span /><span />
                                 <em>Waiting for peer</em>
                             </div>
+
+                            {/* Mini-game */}
+                            {!showGame ? (
+                                <button onClick={() => setShowGame(true)} className="game-toggle">
+                                    <span className="game-toggle-icon">▶</span>
+                                    <span>Play Cipher Runner while you wait</span>
+                                </button>
+                            ) : (
+                                <CipherRunner onStop={() => setShowGame(false)} />
+                            )}
                         </div>
                     )}
 

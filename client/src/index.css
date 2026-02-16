@@ -1524,3 +1524,111 @@
         transform: translateY(0);
     }
 }
+
+/* ══ MINI GAME ══ */
+.game-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 28px;
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.game-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.game-toggle-icon {
+    font-size: 10px;
+    opacity: 0.5;
+}
+
+.mini-game-wrap {
+    margin-top: 28px;
+    width: 100%;
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeUp 0.4s ease both;
+}
+
+.mini-game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 8px;
+    padding: 0 2px;
+}
+
+.mini-game-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.mini-game-hint {
+    font-size: 11px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.15);
+    letter-spacing: 0.1em;
+}
+
+.mini-game-canvas {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.01);
+    cursor: pointer;
+    outline: none;
+    image-rendering: pixelated;
+}
+
+.mini-game-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 6px;
+    padding: 0 2px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.12);
+}
+
+.mini-game-close {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.mini-game-close:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.5);
+}
