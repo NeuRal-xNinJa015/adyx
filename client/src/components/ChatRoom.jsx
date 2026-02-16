@@ -312,7 +312,6 @@ export default function ChatRoom({ roomKey, role, salt, nickname, onLeave }) {
             {/* Blur shield — covers content when screenshot/tab-switch detected */}
             {shielded && (
                 <div className="shield-overlay">
-                    <div className="shield-icon">🔒</div>
                     <div className="shield-label">CONTENT PROTECTED</div>
                 </div>
             )}
