@@ -59,7 +59,7 @@ export default function App() {
 
                 {/* Credit — below center */}
                 <div className={`splash-credit ${splashPhase >= 3 ? 'vis' : ''}`}>
-                    <span className="splash-credit-line">Crafted by Aditya</span>
+                    <span className="splash-credit-line">Engineered by Aditya</span>
                 </div>
 
                 {/* Corners */}

@@ -226,7 +226,7 @@ export default function Landing({ onCreateRoom, onJoinRoom }) {
             <footer className="cinema-footer fade-in-d4">
                 <div className="footer-left">
                     <span className="footer-name">Adyx</span>
-                    <span className="footer-by">Crafted by Aditya</span>
+                    <span className="footer-by">Engineered by Aditya</span>
                 </div>
                 <div className="footer-right">
                     <span className="footer-pill">Zero Knowledge</span>
