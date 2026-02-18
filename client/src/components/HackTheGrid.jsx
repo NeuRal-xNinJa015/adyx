@@ -159,7 +159,7 @@ export default function HackTheGrid({ onStop }) {
     const [, setTick] = useState(0);
     useEffect(() => {
         if (!started || gameOver) return;
-        const t = setInterval(() => setTick(x => x + 1), 80);
+        const t = setInterval(() => setTick(x => x + 1), 100);
         return () => clearInterval(t);
     }, [started, gameOver]);
 
