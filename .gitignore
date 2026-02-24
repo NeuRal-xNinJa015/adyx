@@ -1,0 +1,91 @@
+# === Erlang ===
+_build/
+deps/
+*.beam
+*.ez
+erl_crash.dump
+rebar3.crashdump
+*.plt
+.rebar3/
+
+# === Java ===
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+*.log
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# === Go ===
+bin/
+vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.sum
+
+# === Node.js / React ===
+node_modules/
+dist/
+.vite/
+*.local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+
+# === Docker ===
+.docker/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === Security ===
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+secrets/
+.vault-token
+
+# === OS ===
+.DS_Store
+Thumbs.db
+Desktop.ini

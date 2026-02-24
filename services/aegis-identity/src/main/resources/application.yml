@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: aegis-identity
+  
+  # Database (PostgreSQL)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aegis_identity
+    username: ${DB_USERNAME:aegis}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  # Security
+  security:
+    require-ssl: true
+
+server:
+  port: 8081
+  ssl:
+    enabled: true
+    key-store: classpath:keystore.p12
+    key-store-password: ${KEYSTORE_PASSWORD:}
+    key-store-type: PKCS12
+    client-auth: need  # mTLS required
+
+# AegisComms Identity Configuration
+aegis:
+  identity:
+    # CA Settings
+    ca:
+      root-cert-path: ${CA_ROOT_CERT:/etc/aegis/ca/root.crt}
+      intermediate-cert-path: ${CA_INTERMEDIATE_CERT:/etc/aegis/ca/intermediate.crt}
+      intermediate-key-path: ${CA_INTERMEDIATE_KEY:/etc/aegis/ca/intermediate.key}
+    
+    # Device Registration
+    device:
+      max-devices-per-user: 5
+      certificate-validity-days: 365
+      require-hardware-attestation: true
+    
+    # Authentication
+    auth:
+      totp-enabled: true
+      session-timeout-minutes: 60
+      max-failed-attempts: 5
+      lockout-duration-minutes: 30
+
+# gRPC Server
+grpc:
+  server:
+    port: 9091
+
+# Logging
+logging:
+  level:
+    com.aegiscomms: DEBUG
+    org.springframework.security: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
