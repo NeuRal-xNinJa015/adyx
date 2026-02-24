@@ -1,67 +1,66 @@
-// AegisComms Crypto Service
-//
-// Provides cryptographic operations for the AegisComms platform.
-// This service handles the Signal Protocol implementation, key management,
-// and all cryptographic operations that require server-side coordination.
-//
-// IMPORTANT: This service NEVER has access to plaintext messages.
-// It only manages key exchange, pre-key bundles, and cryptographic metadata.
-//
-// Algorithms:
-//   - X25519 (key exchange)
-//   - Ed25519 (signatures)
-//   - AES-256-GCM (message encryption - client-side only)
-//   - HKDF + SHA-512 (key derivation)
-//   - Signal Protocol (Double Ratchet)
-//
-// Future:
-//   - Hybrid Post-Quantum (Kyber + X25519)
-//   - Crypto agility engine (hot-swappable algorithms)
 package main
 
 import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/aegiscomms/aegis-crypto/internal/prekey"
 	"google.golang.org/grpc"
 )
 
 const (
-	defaultPort = "9093"
-	serviceName = "AegisComms Crypto Service"
+	defaultGRPCPort = "9093"
+	defaultHTTPPort = "8090"
+	serviceName     = "AegisComms Crypto Service"
 )
 
 func main() {
-	port := os.Getenv("GRPC_PORT")
-	if port == "" {
-		port = defaultPort
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = defaultGRPCPort
+	}
+	httpPort := os.Getenv("HTTP_PORT")
+	if httpPort == "" {
+		httpPort = defaultHTTPPort
 	}
 
 	log.Printf("=== %s Starting ===", serviceName)
 	log.Printf("  Signal Protocol | X25519 | Ed25519 | AES-256-GCM")
 	log.Printf("  Zero plaintext access — key management only")
 
-	// Create gRPC server with TLS (mTLS in production)
-	grpcServer := grpc.NewServer(
-	// TODO: Add mTLS credentials
-	// grpc.Creds(credentials.NewTLS(tlsConfig)),
-	)
+	// Initialize pre-key store
+	prekeyStore := prekey.NewStore()
+	prekeyHandler := prekey.NewHandler(prekeyStore)
 
-	// TODO: Register crypto service implementations
-	// pb.RegisterCryptoServiceServer(grpcServer, &cryptoServer{})
-	// pb.RegisterKeyExchangeServiceServer(grpcServer, &keyExchangeServer{})
+	// Start HTTP server for pre-key management (REST API for MVP)
+	httpMux := http.NewServeMux()
+	prekeyHandler.RegisterRoutes(httpMux)
 
-	// Start listening
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	// Add CORS middleware for dev
+	corsHandler := corsMiddleware(httpMux)
+
+	go func() {
+		log.Printf("  [OK] HTTP API listening on :%s", httpPort)
+		if err := http.ListenAndServe(fmt.Sprintf(":%s", httpPort), corsHandler); err != nil {
+			log.Fatalf("HTTP server failed: %v", err)
+		}
+	}()
+
+	// Start gRPC server
+	grpcServer := grpc.NewServer()
+	// TODO: Register gRPC services for Phase 2
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
 	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", port, err)
+		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
 	}
 
-	// Graceful shutdown handler
+	// Graceful shutdown
 	go func() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -71,10 +70,24 @@ func main() {
 		grpcServer.GracefulStop()
 	}()
 
-	log.Printf("  [OK] gRPC server listening on :%s", port)
+	log.Printf("  [OK] gRPC server listening on :%s", grpcPort)
 	log.Printf("=== Crypto Service ONLINE ===")
 
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("gRPC server failed: %v", err)
 	}
+}
+
+// corsMiddleware adds CORS headers for development
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

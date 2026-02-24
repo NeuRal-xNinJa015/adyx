@@ -104,7 +104,7 @@
   margin-bottom: 8px;
 }
 
-.auth-card > p {
+.auth-card>p {
   color: var(--text-secondary);
   margin-bottom: 32px;
 }
@@ -227,8 +227,14 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.conversation-item:hover { background: var(--bg-hover); }
-.conversation-item.active { background: var(--bg-tertiary); border-left: 3px solid var(--accent); }
+.conversation-item:hover {
+  background: var(--bg-hover);
+}
+
+.conversation-item.active {
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent);
+}
 
 .avatar {
   width: 40px;
@@ -247,9 +253,20 @@
   flex-direction: column;
 }
 
-.conversation-info .name { font-weight: 500; font-size: 14px; }
-.conversation-info .last-message { font-size: 12px; color: var(--text-muted); }
-.time { font-size: 11px; color: var(--text-muted); }
+.conversation-info .name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.conversation-info .last-message {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
 
 /* === Chat Area === */
 
@@ -268,7 +285,11 @@
   border-bottom: 1px solid var(--border);
 }
 
-.chat-info h3 { font-size: 16px; font-weight: 600; }
+.chat-info h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .encryption-badge {
   font-size: 11px;
   color: var(--success);
@@ -390,7 +411,261 @@
 }
 
 /* === Scrollbar === */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* === Form Groups === */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.form-group select {
+  cursor: pointer;
+  appearance: none;
+}
+
+/* === Error Banner === */
+.error-banner {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* === Header Status === */
+.header-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.online {
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+
+.status-dot.offline {
+  background: var(--text-muted);
+}
+
+.status-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+/* === Sidebar Sections === */
+.sidebar-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.sidebar-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.sidebar-input:focus {
+  border-color: var(--accent);
+}
+
+.device-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.device-badge {
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: var(--accent);
+}
+
+.crypto-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.crypto-badge {
+  padding: 4px 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--success);
+}
+
+.key-exchange-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.key-exchange-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.key-exchange-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* === Message Bubbles === */
+.message {
+  display: flex;
+  margin-bottom: 4px;
+}
+
+.message.outgoing {
+  justify-content: flex-end;
+}
+
+.message.incoming {
+  justify-content: flex-start;
+}
+
+.message.system {
+  justify-content: center;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.message.outgoing .message-bubble {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message.incoming .message-bubble {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.message.system .message-bubble {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  max-width: 90%;
+  text-align: center;
+}
+
+.message-sender {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.8;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.message-bubble p {
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.message-time {
+  font-size: 10px;
+  opacity: 0.6;
+  display: block;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* === Disabled States === */
+.auth-btn:disabled,
+.send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

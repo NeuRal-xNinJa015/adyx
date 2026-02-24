@@ -2,8 +2,7 @@
 %%% @doc AegisComms Router Application
 %%% 
 %%% Main OTP application module for the Erlang real-time messaging spine.
-%%% Handles TCP/WebSocket connections, message routing, presence tracking,
-%%% delivery acknowledgements, and offline queue management.
+%%% Starts Cowboy WebSocket server and the supervision tree.
 %%%
 %%% Inspired by WhatsApp's Erlang architecture for handling millions
 %%% of concurrent connections with actor-model fault tolerance.
@@ -25,8 +24,11 @@ start(_StartType, _StartArgs) ->
     case aegis_router_sup:start_link() of
         {ok, Pid} ->
             io:format("  [OK] Router supervisor started (PID: ~p)~n", [Pid]),
+            
+            %% Start Cowboy WebSocket listener
             {ok, Port} = application:get_env(aegis_router, listen_port),
-            io:format("  [OK] Listening on port ~p~n", [Port]),
+            start_cowboy(Port),
+            
             io:format("  [OK] AegisComms Router is ONLINE~n~n"),
             {ok, Pid};
         Error ->
@@ -35,11 +37,31 @@ start(_StartType, _StartArgs) ->
     end.
 
 %%--------------------------------------------------------------------
+%% @doc Start Cowboy HTTP/WebSocket server
+%%--------------------------------------------------------------------
+start_cowboy(Port) ->
+    Dispatch = cowboy_router:compile([
+        {'_', [
+            {"/ws", aegis_ws_handler, []},
+            {"/health", aegis_health_handler, []}
+        ]}
+    ]),
+    
+    {ok, _} = cowboy:start_clear(
+        aegis_http_listener,
+        [{port, Port}],
+        #{env => #{dispatch => Dispatch}}
+    ),
+    io:format("  [OK] Cowboy WebSocket listening on port ~p~n", [Port]),
+    io:format("  [OK] WebSocket endpoint: ws://localhost:~p/ws~n", [Port]).
+
+%%--------------------------------------------------------------------
 %% @doc Stop the AegisComms router application
 %%--------------------------------------------------------------------
 stop(_State) ->
     io:format("~n=== AegisComms Router Shutting Down ===~n"),
     io:format("  Draining connections...~n"),
+    cowboy:stop_listener(aegis_http_listener),
     io:format("  Flushing offline queues...~n"),
     io:format("  Router OFFLINE~n~n"),
     ok.
