@@ -2,54 +2,43 @@ spring:
   application:
     name: aegis-identity
   
-  # Database (PostgreSQL)
+  # Database (PostgreSQL — local Docker)
   datasource:
     url: jdbc:postgresql://localhost:5432/aegis_identity
     username: ${DB_USERNAME:aegis}
-    password: ${DB_PASSWORD:}
+    password: ${DB_PASSWORD:aegis_dev_postgres}
     driver-class-name: org.postgresql.Driver
   
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  
-  # Security
-  security:
-    require-ssl: true
 
 server:
   port: 8081
+  # SSL disabled for local dev
   ssl:
-    enabled: true
-    key-store: classpath:keystore.p12
-    key-store-password: ${KEYSTORE_PASSWORD:}
-    key-store-type: PKCS12
-    client-auth: need  # mTLS required
+    enabled: false
 
 # AegisComms Identity Configuration
 aegis:
   identity:
-    # CA Settings
     ca:
-      root-cert-path: ${CA_ROOT_CERT:/etc/aegis/ca/root.crt}
-      intermediate-cert-path: ${CA_INTERMEDIATE_CERT:/etc/aegis/ca/intermediate.crt}
-      intermediate-key-path: ${CA_INTERMEDIATE_KEY:/etc/aegis/ca/intermediate.key}
-    
-    # Device Registration
+      root-cert-path: ${CA_ROOT_CERT:}
+      intermediate-cert-path: ${CA_INTERMEDIATE_CERT:}
+      intermediate-key-path: ${CA_INTERMEDIATE_KEY:}
     device:
       max-devices-per-user: 5
       certificate-validity-days: 365
-      require-hardware-attestation: true
-    
-    # Authentication
+      require-hardware-attestation: false
     auth:
-      totp-enabled: true
+      totp-enabled: false
       session-timeout-minutes: 60
-      max-failed-attempts: 5
-      lockout-duration-minutes: 30
+      max-failed-attempts: 10
+      lockout-duration-minutes: 5
 
 # gRPC Server
 grpc:
