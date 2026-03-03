@@ -1,103 +1,58 @@
-# 🛡️ AegisComms
+# 🛡️ ADYX — Anonymous Communication Protocol
 
-**High-Assurance Secure Messaging Platform**
+**End-to-end encrypted, zero-trace messaging platform.**
 
-AegisComms is a sovereign, mission-critical messaging platform built for security agencies, government organizations, and defense units. It provides end-to-end encrypted communications with zero-trust architecture, minimal metadata retention, and post-quantum readiness.
-
-> This is not social media. This is sovereign communication infrastructure.
+> No login. No email. No phone number. Just conversations that vanish.
 
 ---
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                CLIENTS (Web / Desktop)               │
-│  React UI │ Signal Protocol (E2EE) │ Local Encrypted │
-└──────────────────────┬──────────────────────────────┘
-                       │ WebSocket / mTLS
-┌──────────────────────▼──────────────────────────────┐
-│              ERLANG ROUTING CORE                     │
-│  Connection Mgmt │ Presence │ Message Routing        │
-│  Delivery ACKs   │ Offline Queues                    │
-└──────────────────────┬──────────────────────────────┘
-                       │ gRPC
-┌──────────────────────▼──────────────────────────────┐
-│              MICROSERVICES                           │
-│  Identity (Java) │ Crypto (Go) │ Admin (Java)        │
-│  Policy Engine   │ Audit       │ Sentinel (Python)   │
-└──────────────────────┬──────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────┐
-│              INFRASTRUCTURE                          │
-│  Redis │ Cassandra │ Kafka │ Vault │ HSM             │
-└─────────────────────────────────────────────────────┘
-```
 
 ## Project Structure
 
 ```
-aegiscomms/
-├── services/
-│   ├── aegis-router/       # Erlang — Real-time messaging spine
-│   ├── aegis-identity/     # Java — PKI Identity & auth
-│   ├── aegis-crypto/       # Go — Cryptographic operations
-│   ├── aegis-admin/        # Java — Admin API & audit
-│   └── aegis-sentinel/     # Python — AI security analytics
-├── clients/
-│   └── aegis-web/          # React + Vite — Web client
-├── proto/                  # Shared gRPC definitions
-├── infra/                  # Docker, K8s, Terraform
-└── docs/                   # Architecture & specs
+adyx/
+├── frontend/          # React + Vite — Web client
+├── backend/           # Node.js — WebSocket relay server
+├── integration/       # Proto, docs, Docker, infra
+│   ├── proto/         # gRPC / Protobuf definitions
+│   ├── docs/          # Architecture & threat model
+│   ├── infra/         # Docker & Kubernetes configs
+│   ├── docker-compose.yml
+│   └── PRD.md
+└── README.md
 ```
-
-## Tech Stack
-
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Routing Core | **Erlang/OTP** | Real-time messaging, millions of connections |
-| Identity | **Java / Spring Boot** | PKI, certificate management, auth |
-| Crypto | **Go** | Signal Protocol, key management |
-| Admin | **Java / Spring Boot** | Admin console, audit logging |
-| Sentinel | **Python** | ML-based anomaly detection |
-| Web Client | **React + Vite** | End-user messaging interface |
-| Protocol | **gRPC + Protobuf** | Inter-service communication |
-| Infra | **Docker, K8s, Terraform** | Deployment orchestration |
-
-## Security Features
-
-- 🔐 **Signal Protocol E2EE** — Double Ratchet, forward secrecy
-- 🪪 **PKI Identity** — No phone numbers, certificate-based auth
-- 🔒 **Zero Trust** — mTLS everywhere, service mesh
-- 💀 **Panic Wipe** — Instant cryptographic destruction
-- 🕵️ **Metadata Minimization** — Sealed sender, dummy traffic
-- 🔮 **Post-Quantum Ready** — Kyber + X25519 hybrid
 
 ## Quick Start
 
 ```bash
-# Start infrastructure
-docker compose up -d
+# 1. Install dependencies
+cd frontend && npm install
+cd ../backend && npm install
 
-# Start Erlang router
-cd services/aegis-router && rebar3 shell
+# 2. Start backend (WebSocket server on port 8443)
+cd backend && npm start
 
-# Start Identity service
-cd services/aegis-identity && mvn spring-boot:run
-
-# Start Crypto service
-cd services/aegis-crypto && go run cmd/server/main.go
-
-# Start Web client
-cd clients/aegis-web && npm install && npm run dev
+# 3. Start frontend (Vite dev server on port 5173)
+cd frontend && npm run dev
 ```
 
-## Development Phases
+Open **<http://localhost:5173>** → Create Room → Share the code → Chat anonymously.
 
-- **Phase 1 (MVP):** PKI identity, Signal E2EE, Erlang routing, 1:1 chat
-- **Phase 2:** Groups, media, admin console
-- **Phase 3:** Hardware keys, on-prem, audit system
-- **Phase 4:** Post-quantum crypto, traffic obfuscation
+## Features
+
+- 🔐 **256-bit AES-GCM Encryption** — End-to-end, client-side only
+- 🕵️ **Zero Trace** — Nothing stored on the server. Ever.
+- ⚡ **Peer-to-Peer** — Direct message routing, no middleman
+- 🪪 **No Login** — No email, no password, no identity
+- 🚀 **Instant** — Connect in under 1 second
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Frontend | React 19 + Vite + Framer Motion |
+| Backend | Node.js WebSocket Server |
+| Encryption | Web Crypto API (ECDH P-256 + AES-256-GCM) |
+| Protocol | JSON over WebSocket |
 
 ## License
 

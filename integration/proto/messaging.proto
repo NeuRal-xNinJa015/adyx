@@ -1,0 +1,190 @@
+// Adyx Protocol Buffer Definitions
+// Shared gRPC service definitions for inter-service communication
+//
+// Security: These messages carry encrypted blobs and metadata only.
+// Plaintext message content NEVER appears in any proto definition.
+
+syntax = "proto3";
+
+package adyx;
+
+option java_multiple_files = true;
+option java_package = "com.adyx.proto";
+option go_package = "github.com/adyx/adyx-crypto/proto";
+
+// ============================================================
+// Message Service — Encrypted message routing
+// ============================================================
+
+service MessageService {
+  // Route an encrypted message blob
+  rpc SendMessage(EncryptedMessage) returns (DeliveryReceipt);
+  
+  // Fetch pending messages for a device
+  rpc FetchMessages(FetchRequest) returns (stream EncryptedMessage);
+  
+  // Acknowledge message delivery
+  rpc AcknowledgeDelivery(DeliveryAck) returns (AckResponse);
+}
+
+message EncryptedMessage {
+  string message_id = 1;
+  string sender_device_id = 2;
+  string recipient_device_id = 3;
+  bytes  encrypted_payload = 4;    // E2E encrypted blob — server cannot read
+  int64  timestamp = 5;
+  MessageType type = 6;
+  int32  ttl_seconds = 7;          // Self-destruct timer (0 = permanent)
+}
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TEXT = 1;
+  MESSAGE_TYPE_FILE = 2;
+  MESSAGE_TYPE_KEY_EXCHANGE = 3;   // Signal Protocol key exchange
+  MESSAGE_TYPE_RECEIPT = 4;        // Read/delivery receipts
+  MESSAGE_TYPE_SYSTEM = 5;         // System notifications
+}
+
+message DeliveryReceipt {
+  string message_id = 1;
+  DeliveryStatus status = 2;
+  int64 timestamp = 3;
+}
+
+enum DeliveryStatus {
+  DELIVERY_STATUS_UNSPECIFIED = 0;
+  DELIVERY_STATUS_SENT = 1;
+  DELIVERY_STATUS_QUEUED = 2;      // Recipient offline
+  DELIVERY_STATUS_DELIVERED = 3;
+  DELIVERY_STATUS_FAILED = 4;
+}
+
+message FetchRequest {
+  string device_id = 1;
+  int64  since_timestamp = 2;
+  int32  max_messages = 3;
+}
+
+message DeliveryAck {
+  string message_id = 1;
+  string device_id = 2;
+}
+
+message AckResponse {
+  bool success = 1;
+}
+
+// ============================================================
+// Identity Service — PKI Certificate Management
+// ============================================================
+
+service IdentityService {
+  // Register a new device with a certificate
+  rpc RegisterDevice(DeviceRegistration) returns (DeviceCertificate);
+  
+  // Revoke a device certificate
+  rpc RevokeDevice(RevokeRequest) returns (RevokeResponse);
+  
+  // Lookup a user's devices and public keys
+  rpc LookupUser(UserLookup) returns (UserDevices);
+  
+  // Verify a certificate chain
+  rpc VerifyCertificate(CertificateChain) returns (VerificationResult);
+}
+
+message DeviceRegistration {
+  string user_id = 1;
+  string device_fingerprint = 2;
+  bytes  public_key = 3;            // X25519 public key
+  bytes  signing_public_key = 4;    // Ed25519 public key
+  bytes  hardware_attestation = 5;  // Hardware security module attestation
+}
+
+message DeviceCertificate {
+  string device_id = 1;
+  bytes  certificate = 2;           // X.509 certificate
+  int64  valid_until = 3;
+  string issuer = 4;                // Intermediate CA identifier
+}
+
+message RevokeRequest {
+  string device_id = 1;
+  string reason = 2;
+  string authorized_by = 3;        // Admin who authorized revocation
+}
+
+message RevokeResponse {
+  bool success = 1;
+  string ocsp_status = 2;
+}
+
+message UserLookup {
+  string user_id = 1;
+}
+
+message UserDevices {
+  string user_id = 1;
+  repeated DeviceInfo devices = 2;
+}
+
+message DeviceInfo {
+  string device_id = 1;
+  bytes  public_key = 2;
+  bytes  signing_public_key = 3;
+  bool   is_active = 4;
+  int64  last_seen = 5;
+}
+
+message CertificateChain {
+  repeated bytes certificates = 1;
+}
+
+message VerificationResult {
+  bool   valid = 1;
+  string reason = 2;
+}
+
+// ============================================================
+// Crypto Service — Key Exchange & Pre-Key Management
+// ============================================================
+
+service CryptoService {
+  // Upload pre-key bundle (Signal Protocol)
+  rpc UploadPreKeyBundle(PreKeyBundle) returns (UploadResponse);
+  
+  // Fetch pre-key bundle for initiating a session
+  rpc FetchPreKeyBundle(PreKeyRequest) returns (PreKeyBundle);
+  
+  // Report a compromised key
+  rpc ReportKeyCompromise(KeyCompromiseReport) returns (CompromiseResponse);
+}
+
+message PreKeyBundle {
+  string device_id = 1;
+  bytes  identity_key = 2;          // Long-term identity key
+  bytes  signed_pre_key = 3;        // Signed pre-key (rotated periodically)
+  bytes  signed_pre_key_signature = 4;
+  repeated bytes one_time_pre_keys = 5;  // Ephemeral one-time pre-keys
+  int32  signed_pre_key_id = 6;
+}
+
+message PreKeyRequest {
+  string target_device_id = 1;
+}
+
+message UploadResponse {
+  bool success = 1;
+  int32 remaining_one_time_keys = 2;
+}
+
+message KeyCompromiseReport {
+  string device_id = 1;
+  string compromise_type = 2;       // "device_stolen", "key_leaked", etc.
+  int64  timestamp = 3;
+}
+
+message CompromiseResponse {
+  bool   acknowledged = 1;
+  string action_taken = 2;          // "keys_revoked", "device_wiped", etc.
+}
