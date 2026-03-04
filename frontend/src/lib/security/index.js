@@ -62,6 +62,31 @@ export {
 // ── Phase 9: Post-Quantum ──
 export { getCryptoProvider, ClassicProvider, HybridProvider } from './hybridCrypto.js'
 
+// ── Phase 11: Secure Media & File Sharing ──
+export { validateFile, getFileCategory, getAcceptString, formatFileSize } from './fileValidator.js'
+export {
+    generateFileKey, encryptFile, decryptFile,
+    exportFileKey, importFileKey,
+    hashFile, verifyFileIntegrity,
+    encryptMetadata, decryptMetadata,
+    chunkData, reassembleChunks
+} from './fileCrypto.js'
+export { stripImageMetadata, canStripMetadata, generateThumbnail } from './metadataStripper.js'
+export {
+    createViewerProtections, destroyViewerProtections,
+    enterFullscreen, exitFullscreen
+} from './secureMediaViewer.js'
+export {
+    createEphemeralSession, markAsViewed, onViewerClosed,
+    isExpired, isViewOnceConsumed, getEphemeralInfo,
+    getRemainingSeconds, destroyEphemeralMedia, destroyAllEphemeral,
+    SELF_DESTRUCT_TIMERS, formatTimer
+} from './ephemeralMedia.js'
+export {
+    createSecureBuffer, destroySecureBuffer, destroyAllBuffers,
+    getActiveBufferCount, preventCaching, registerWithSecureWipe
+} from './fileMemorySecurity.js'
+
 // ── Lifecycle ──
 
 let initialized = false
@@ -88,17 +113,17 @@ export async function initializeSecurity(configOverrides = {}) {
     console.log('[Security] ═══════════════════════════════════════')
     console.log('[Security]   ADYX Security Layer v1.0.0')
     console.log('[Security] ═══════════════════════════════════════')
-    console.log('[Security] Encryption:      ', config.encryption.enabled ? '✓' : '✗')
-    console.log('[Security] Double Ratchet:  ', config.encryption.doubleRatchet ? '✓' : '✗')
-    console.log('[Security] Signatures:      ', config.encryption.signMessages ? '✓' : '✗')
-    console.log('[Security] Anti-Exfiltration:', config.antiExfiltration.enabled ? '✓' : '✗')
-    console.log('[Security] Watermark:       ', config.watermark.enabled ? '✓' : '✗')
-    console.log('[Security] Device Binding:  ', config.deviceSecurity.fingerprintBinding ? '✓' : '✗')
-    console.log('[Security] Session Guard:   ', config.deviceSecurity.enabled ? '✓' : '✗')
-    console.log('[Security] Traffic Padding: ', config.metadataProtection.enabled ? '✓' : '✗')
-    console.log('[Security] Threat Monitor:  ', config.threatDetection.enabled ? '✓' : '✗')
-    console.log('[Security] Anonymity Mode:  ', config.anonymity.enabled ? '✓' : '✗')
-    console.log('[Security] Post-Quantum:    ', config.postQuantum.enabled ? '✓' : '✗')
+    console.log('[Security] Encryption:      ', config.encryption.enabled ? '[ON]' : '[OFF]')
+    console.log('[Security] Double Ratchet:  ', config.encryption.doubleRatchet ? '[ON]' : '[OFF]')
+    console.log('[Security] Signatures:      ', config.encryption.signMessages ? '[ON]' : '[OFF]')
+    console.log('[Security] Anti-Exfiltration:', config.antiExfiltration.enabled ? '[ON]' : '[OFF]')
+    console.log('[Security] Watermark:       ', config.watermark.enabled ? '[ON]' : '[OFF]')
+    console.log('[Security] Device Binding:  ', config.deviceSecurity.fingerprintBinding ? '[ON]' : '[OFF]')
+    console.log('[Security] Session Guard:   ', config.deviceSecurity.enabled ? '[ON]' : '[OFF]')
+    console.log('[Security] Traffic Padding: ', config.metadataProtection.enabled ? '[ON]' : '[OFF]')
+    console.log('[Security] Threat Monitor:  ', config.threatDetection.enabled ? '[ON]' : '[OFF]')
+    console.log('[Security] Anonymity Mode:  ', config.anonymity.enabled ? '[ON]' : '[OFF]')
+    console.log('[Security] Post-Quantum:    ', config.postQuantum.enabled ? '[ON]' : '[OFF]')
     console.log('[Security] ═══════════════════════════════════════')
 
     // Generate device fingerprint
@@ -115,7 +140,7 @@ export async function initializeSecurity(configOverrides = {}) {
     }
 
     initialized = true
-    console.log('[Security] ✓ All security layers initialized')
+    console.log('[Security] All security layers initialized')
 }
 
 /**
@@ -156,7 +181,7 @@ export async function teardownSecurity() {
     performSecureWipe()
 
     initialized = false
-    console.log('[Security] ✓ All security layers torn down')
+    console.log('[Security] All security layers torn down')
 }
 
 /**

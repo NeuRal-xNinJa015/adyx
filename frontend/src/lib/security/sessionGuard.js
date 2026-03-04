@@ -75,7 +75,7 @@ export function initSessionGuard(callbacks = {}) {
     }
 
     setSessionState('active')
-    console.log('[SessionGuard] ✓ Active (timeout:', config.inactivityTimeoutMs / 1000, 's, rotation:', config.keyRotationIntervalMs / 60000, 'min)')
+    console.log('[SessionGuard] Active (timeout:', config.inactivityTimeoutMs / 1000, 's, rotation:', config.keyRotationIntervalMs / 60000, 'min)')
 }
 
 /**

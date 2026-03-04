@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Shield, Clock, LogOut, User, Lock, Zap, Wifi, WifiOff } from 'lucide-react'
 import * as ws from '../lib/ws'
+import FileUploadButton from './FileUploadButton.jsx'
+import MediaMessage from './MediaMessage.jsx'
 
 export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
     const [messages, setMessages] = useState([])
@@ -18,6 +20,7 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
     const typingTimeoutRef = useRef(null)
     const lastTypingSentRef = useRef(0)
     const sendingRef = useRef(false)
+    const fileKeysRef = useRef(new Map())  // fileId → keyBase64
     const MAX_MESSAGES = 500
 
     const addLog = useCallback((text) => {
@@ -52,7 +55,7 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
                 encrypted: msg.encrypted || false,
                 time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
             }])
-            addLog(`MSG ← ${msg.encrypted ? '🔐' : '📝'} ${msg.deviceId?.slice(0, 8) || 'peer'}`)
+            addLog(`MSG IN ${msg.encrypted ? '[E2E]' : '[PLAIN]'} ${msg.deviceId?.slice(0, 8) || 'peer'}`)
             setPeerTyping(false)
         })
 
@@ -92,7 +95,7 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
         const offEncReady = ws.on('encryption_ready', () => {
             setEncrypted(true)
             addSystemMessage('End-to-end encryption activated')
-            addLog('E2E: ECDH P-256 + AES-256-GCM ✓')
+            addLog('E2E: ECDH P-256 + AES-256-GCM [OK]')
         })
 
         const offTyping = ws.on('typing', () => {
@@ -101,8 +104,66 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
             typingTimeoutRef.current = setTimeout(() => setPeerTyping(false), 3000)
         })
 
+        // ── File Events ──
+
+        // Intercept file key messages (sent as encrypted messages with isFileKey flag)
+        const offFileKeyMsg = ws.on('message', (msg) => {
+            if (!msg.payload) return
+            try {
+                const parsed = typeof msg.payload === 'string' ? JSON.parse(msg.payload) : null
+                if (parsed && parsed.type === 'file_key') {
+                    fileKeysRef.current.set(parsed.fileId, parsed.keyBase64)
+                    addLog(`FILE KEY ← ${parsed.fileId.slice(0, 8)}`)
+                }
+            } catch (_) {
+                // Not a file key message — ignore
+            }
+        })
+
+        // When a file is ready from peer
+        const offFileReady = ws.on('file_ready', async (msg) => {
+            addLog(`FILE ← ${msg.displayCategory} from ${msg.deviceId?.slice(0, 8)}`)
+            addSystemMessage('Encrypted file received')
+
+            // Request download
+            try {
+                const chunks = await ws.requestFile(msg.fileId, roomCode, msg.totalChunks)
+                const keyBase64 = fileKeysRef.current.get(msg.fileId)
+
+                setMessages(prev => [...prev, {
+                    id: Date.now() + Math.random(),
+                    type: 'received',
+                    isFile: true,
+                    fileData: {
+                        fileId: msg.fileId,
+                        chunks,
+                        totalChunks: msg.totalChunks,
+                        iv: msg.iv,
+                        hash: msg.hash,
+                        keyBase64: keyBase64 || '',
+                        encryptedMetadata: msg.encryptedMetadata,
+                        thumbnail: msg.thumbnail,
+                        ephemeral: msg.ephemeral,
+                        displayCategory: msg.displayCategory,
+                    },
+                    sender: msg.deviceId?.slice(0, 8) || 'Peer',
+                    encrypted: true,
+                    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                }])
+            } catch (err) {
+                console.error('[Chat] File download failed:', err)
+                addLog('FILE download FAILED')
+            }
+        })
+
+        // When a file is deleted
+        const offFileDeleted = ws.on('file_deleted', (msg) => {
+            addLog(`FILE DELETED: ${msg.fileId.slice(0, 8)}`)
+        })
+
         return () => {
             offMessage(); offMessage2(); offAck(); offPeerLeft(); offDisconnected(); offConnected(); offEncReady(); offTyping()
+            offFileKeyMsg(); offFileReady(); offFileDeleted()
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
         }
     }, [roomCode, isCreator, addLog, addSystemMessage])
@@ -151,7 +212,7 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
 
         try {
             await ws.sendMessage(text, roomCode, msgId)
-            addLog(`MSG → ${encrypted ? '🔐' : '📝'} peer`)
+            addLog(`MSG OUT ${encrypted ? '[E2E]' : '[PLAIN]'} peer`)
         } catch (err) {
             console.error('[Chat] Send failed:', err)
             addLog('MSG → FAILED')
@@ -166,6 +227,36 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
             }
         } catch (_) { /* ignore notification errors */ }
     }
+
+    // ── File Upload Handler ──
+    const handleFileReady = useCallback(async (fileData) => {
+        try {
+            // Store our own file key
+            fileKeysRef.current.set(fileData.fileId, fileData.keyBase64)
+
+            // Add file message to chat locally
+            setMessages(prev => [...prev, {
+                id: Date.now() + Math.random(),
+                type: 'sent',
+                isFile: true,
+                fileData,
+                delivered: false,
+                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+            }])
+
+            // Send through WebSocket
+            await ws.sendFile(fileData, roomCode)
+            addLog(`FILE OUT [E2E] ${fileData.displayCategory}`)
+
+            // Mark as delivered
+            setMessages(prev => prev.map(m =>
+                m.fileData?.fileId === fileData.fileId ? { ...m, delivered: true } : m
+            ))
+        } catch (err) {
+            console.error('[Chat] File send failed:', err)
+            addLog('FILE → FAILED')
+        }
+    }, [roomCode, addLog])
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -342,6 +433,13 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
                                         <Shield size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
                                         {msg.text}
                                     </div>
+                                ) : msg.isFile ? (
+                                    <MediaMessage
+                                        fileData={msg.fileData}
+                                        isSent={msg.type === 'sent'}
+                                        sessionId={ws.getStatus().deviceId}
+                                        deviceHash=""
+                                    />
                                 ) : (
                                     <>
                                         <div className="msg__bubble">{linkifyText(msg.text)}</div>
@@ -391,6 +489,11 @@ export default function ChatScreen({ roomCode, isCreator, onEndSession }) {
                             </div>
                         )}
                         <div className="chat__input-wrapper">
+                            <FileUploadButton
+                                onFileReady={handleFileReady}
+                                disabled={!peerConnected}
+                                roomCode={roomCode}
+                            />
                             <input
                                 ref={inputRef}
                                 type="text"

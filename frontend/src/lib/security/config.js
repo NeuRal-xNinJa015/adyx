@@ -106,6 +106,28 @@ const SECURITY_CONFIG = {
         maxViolations: 5,             // Force-end session after this many violations
         violationWarningDurationMs: 3000, // How long violation warning shows
     },
+
+    // ── Phase 11: Secure Media & File Sharing ──
+    secureMedia: {
+        enabled: true,
+        maxFileSizeMB: 50,                          // Max file size in MB
+        allowedTypes: {
+            documents: true,
+            images: true,
+            video: true,
+            audio: true,
+            archives: true,
+        },
+        ephemeralMedia: true,                        // Enable ephemeral modes
+        viewOnce: true,                              // Allow view-once media
+        selfDestructTimers: [5, 10, 30, 60],         // Available timers (seconds)
+        metadataStripping: true,                     // Auto-strip EXIF from images
+        integrityVerification: true,                 // SHA-256 hash verification
+        secureViewer: true,                          // Protected viewer with watermark
+        encryptedThumbnails: true,                   // Generate encrypted previews
+        fileVault: false,                            // In-room file vault (optional)
+        expiringDownloads: false,                    // Time-limited download links (optional)
+    },
 }
 
 /**

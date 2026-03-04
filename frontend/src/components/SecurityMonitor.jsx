@@ -140,7 +140,7 @@ function StatusRow({ label, active }) {
                 color: active ? '#00ff88' : '#333',
                 fontSize: '8px',
             }}>
-                {active ? '✓' : '✗'}
+                {active ? '[ON]' : '[OFF]'}
             </span>
         </div>
     )

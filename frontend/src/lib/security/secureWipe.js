@@ -97,7 +97,7 @@ export function performSecureWipe() {
         secElements.forEach(el => el.remove())
     } catch (e) { /* ignore */ }
 
-    console.log('[SecureWipe] ✓ Secure wipe complete')
+    console.log('[SecureWipe] Secure wipe complete')
 }
 
 /**

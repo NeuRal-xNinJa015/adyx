@@ -100,7 +100,7 @@ export async function processKeyExchange(peerPublicKeyB64, peerVerifyKeyB64, sen
         await ratchet.initAsResponder(sharedBits, keyPair, publicKeyBase64)
     }
 
-    console.log('[SecureMsg] Double Ratchet initialized ✓')
+    console.log('[SecureMsg] Double Ratchet initialized')
 
     return {
         publicKey: publicKeyBase64,
@@ -179,7 +179,7 @@ export async function decryptMessage(payload, iv) {
                 const signData = envelope.c + JSON.stringify(envelope.h)
                 verified = await verify(peerVerifyKey, envelope.s, signData)
                 if (!verified) {
-                    console.warn('[SecureMsg] ⚠ Signature verification FAILED')
+                    console.warn('[SecureMsg] Signature verification FAILED')
                 }
             }
 

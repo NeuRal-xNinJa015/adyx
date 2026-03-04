@@ -45,7 +45,7 @@ export function startSecureMode() {
     }
     if (active) return
 
-    console.log('[SecureMode] 🔒 Initializing content protection...')
+    console.log('[SecureMode] Initializing content protection...')
     active = true
     securityEvents = []
 
@@ -97,7 +97,7 @@ export function startSecureMode() {
     initUnloadWarning()
 
     logEvent('SECURE_MODE_START', 'Content protection activated')
-    console.log('[SecureMode] ✓ All content protections active')
+    console.log('[SecureMode] All content protections active')
 }
 
 /**
@@ -123,7 +123,7 @@ export function stopSecureMode() {
     active = false
     securityEvents = []
     eventCallbacks = []
-    console.log('[SecureMode] 🔓 Content protection released')
+    console.log('[SecureMode] Content protection released')
 }
 
 /**
@@ -210,7 +210,7 @@ function createBlurOverlay() {
         transition: opacity 0.2s ease;
     `
     blurOverlay.innerHTML = `
-        <div style="font-size: 40px; opacity: 0.5;">🔒</div>
+        <div style="font-size: 40px; opacity: 0.5;">LOCKED</div>
         <div style="color: #ffffff; font-size: 14px; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 600;">
             CONTENT PROTECTED
         </div>

@@ -71,7 +71,7 @@ export function initWatermark(sessionId = '', deviceHash = '') {
     // Handle resize
     window.addEventListener('resize', drawWatermark)
 
-    console.log('[Watermark] ✓ Active')
+    console.log('[Watermark] Active')
 }
 
 /**

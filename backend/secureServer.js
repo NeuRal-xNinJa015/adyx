@@ -29,14 +29,14 @@ console.log(`
 `)
 
 console.log('[SECURE] Security features:')
-console.log(`  Rate Limiting:      ${SECURITY_CONFIG.rateLimit.enabled ? '✓' : '✗'}`)
-console.log(`  Metadata Minimize:  ${SECURITY_CONFIG.metadata.enabled ? '✓' : '✗'}`)
-console.log(`  Security Headers:   ${SECURITY_CONFIG.headers.enabled ? '✓' : '✗'}`)
-console.log(`  HSTS:               ${SECURITY_CONFIG.headers.hsts ? '✓' : '✗'}`)
-console.log(`  CSP:                ${SECURITY_CONFIG.headers.csp ? '✓' : '✗'}`)
-console.log(`  WSS Enforcement:    ${SECURITY_CONFIG.transport.enforceWSS ? '✓' : '✗'}`)
-console.log(`  Threat Detection:   ${SECURITY_CONFIG.threatDetection.enabled ? '✓' : '✗'}`)
-console.log(`  IP Anonymization:   ${SECURITY_CONFIG.logging.anonymizeIPs ? '✓' : '✗'}`)
+console.log(`  Rate Limiting:      ${SECURITY_CONFIG.rateLimit.enabled ? '[ON]' : '[OFF]'}`)
+console.log(`  Metadata Minimize:  ${SECURITY_CONFIG.metadata.enabled ? '[ON]' : '[OFF]'}`)
+console.log(`  Security Headers:   ${SECURITY_CONFIG.headers.enabled ? '[ON]' : '[OFF]'}`)
+console.log(`  HSTS:               ${SECURITY_CONFIG.headers.hsts ? '[ON]' : '[OFF]'}`)
+console.log(`  CSP:                ${SECURITY_CONFIG.headers.csp ? '[ON]' : '[OFF]'}`)
+console.log(`  WSS Enforcement:    ${SECURITY_CONFIG.transport.enforceWSS ? '[ON]' : '[OFF]'}`)
+console.log(`  Threat Detection:   ${SECURITY_CONFIG.threatDetection.enabled ? '[ON]' : '[OFF]'}`)
+console.log(`  IP Anonymization:   ${SECURITY_CONFIG.logging.anonymizeIPs ? '[ON]' : '[OFF]'}`)
 console.log('')
 
 // ── Import original server ──
@@ -65,6 +65,6 @@ function secureShutdown(signal) {
 process.prependListener('SIGTERM', () => secureShutdown('SIGTERM'))
 process.prependListener('SIGINT', () => secureShutdown('SIGINT'))
 
-console.log('[SECURE] ⚡ Security middleware active')
+console.log('[SECURE] Security middleware active')
 console.log('[SECURE]    Use ADYX_* environment variables to configure')
 console.log('[SECURE]    Example: ADYX_HSTS_ENABLED=true ADYX_CSP_ENABLED=true node secureServer.js')

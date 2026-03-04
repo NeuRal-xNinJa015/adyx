@@ -145,7 +145,7 @@ export function initAntiExfiltration() {
     cleanupFunctions.push(() => document.removeEventListener('keydown', printHandler, true))
 
     isActive = true
-    console.log('[AntiExfil] ✓ All measures active')
+    console.log('[AntiExfil] All measures active')
 }
 
 /**
@@ -204,7 +204,7 @@ function createBlurOverlay() {
     `
     blurOverlay.innerHTML = `
         <div style="color: #ff4444; font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase;">
-            🔒 CONTENT PROTECTED
+            CONTENT PROTECTED
         </div>
         <div id="adyx-blur-reason" style="color: #666; font-size: 11px; letter-spacing: 0.1em;"></div>
     `

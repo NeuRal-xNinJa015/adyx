@@ -44,7 +44,7 @@ class SecurityMonitor {
         this.checkInterval = setInterval(() => this._anomalyCheck(), 10000)
 
         this._logEvent('MONITOR_START', 'Security monitor activated')
-        console.log('[SecurityMonitor] ✓ Active')
+        console.log('[SecurityMonitor] Active')
     }
 
     /**
@@ -207,13 +207,13 @@ class SecurityMonitor {
         }
 
         this._logEvent('THREAT', `[${level.toUpperCase()}] ${reason}`)
-        console.warn(`[SecurityMonitor] ⚠ THREAT [${level}]:`, reason)
+        console.warn(`[SecurityMonitor] THREAT [${level}]:`, reason)
 
         this._emit('threat', { level, reason, prevLevel })
 
         // Auto-destroy on critical threat
         if (level === 'red' && SECURITY_CONFIG.threatDetection.autoDestroyOnThreat) {
-            console.error('[SecurityMonitor] 🚨 CRITICAL THREAT — auto-destroying session')
+            console.error('[SecurityMonitor] CRITICAL THREAT - auto-destroying session')
             this._emit('threat', { level: 'critical', reason: 'Auto-destroy triggered', action: 'destroy' })
         }
     }

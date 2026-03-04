@@ -21,13 +21,16 @@ const HEARTBEAT_INTERVAL = 30000;       // 30s ping/pong
 const ROOM_TTL = 10 * 60 * 1000;        // 10 min idle TTL
 const RATE_LIMIT_ROOMS = 5;              // max rooms per minute
 const RATE_LIMIT_MESSAGES = 60;          // max messages per minute
-const MAX_PAYLOAD_SIZE = 64 * 1024;      // 64KB max message payload
+const MAX_PAYLOAD_SIZE = 256 * 1024;     // 256KB max message payload (increased for file chunks)
 const MAX_DEVICE_ID_LEN = 32;
-const VALID_TYPES = new Set(['auth', 'create_room', 'join_room', 'key_exchange', 'message', 'typing', 'end_session', 'presence']);
+const MAX_FILE_SIZE = 50 * 1024 * 1024;  // 50MB max file (assembled)
+const FILE_EXPIRY_MS = 10 * 60 * 1000;   // 10 min file expiry
+const VALID_TYPES = new Set(['auth', 'create_room', 'join_room', 'key_exchange', 'message', 'typing', 'end_session', 'presence', 'file_upload', 'file_chunk', 'file_download', 'file_delete']);
 
 // ── State ──
 const connections = new Map();   // deviceId → { ws, alive, roomRateWindow, msgRateWindow }
 const rooms = new Map();         // roomCode → { creator, members, lastActivity }
+const fileStore = new Map();     // fileId → { chunks[], totalChunks, metadata, expiry, roomCode, senderId, receivedChunks }
 
 function generateRoomCode() {
     return randomBytes(3).toString('hex');
@@ -80,9 +83,21 @@ function checkRate(connInfo, type) {
 }
 
 // ── HTTP Server (health check) ──
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 const httpServer = createServer((req, res) => {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204, CORS_HEADERS);
+        res.end();
+        return;
+    }
     if (req.url === '/health' && req.method === 'GET') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.writeHead(200, { 'Content-Type': 'application/json', ...CORS_HEADERS });
         res.end(JSON.stringify({
             status: 'ok',
             uptime: process.uptime(),
@@ -90,7 +105,7 @@ const httpServer = createServer((req, res) => {
             rooms: rooms.size
         }));
     } else {
-        res.writeHead(404);
+        res.writeHead(404, CORS_HEADERS);
         res.end();
     }
 });
@@ -121,6 +136,20 @@ const roomCleanup = setInterval(() => {
                 safeSend(m.ws, { type: 'session_ended', roomCode, reason: 'Room expired due to inactivity' });
             });
             rooms.delete(roomCode);
+            // Clean up files for this room
+            for (const [fileId, file] of fileStore.entries()) {
+                if (file.roomCode === roomCode) {
+                    fileStore.delete(fileId);
+                    log('FILE_CLEANUP', `File ${fileId} deleted (room expired)`);
+                }
+            }
+        }
+    }
+    // Clean up expired files
+    for (const [fileId, file] of fileStore.entries()) {
+        if (file.expiry && now > file.expiry) {
+            fileStore.delete(fileId);
+            log('FILE_CLEANUP', `File ${fileId} expired`);
         }
     }
 }, 60000); // check every minute
@@ -325,6 +354,13 @@ wss.on('connection', (ws) => {
                     }
                 });
                 rooms.delete(roomCode);
+                // Clean up files for this room
+                for (const [fileId, file] of fileStore.entries()) {
+                    if (file.roomCode === roomCode) {
+                        fileStore.delete(fileId);
+                        log('FILE_CLEANUP', `File ${fileId} deleted (session ended)`);
+                    }
+                }
                 log('SESSION', `Room ${roomCode} ended by ${deviceId}`);
             }
             safeSend(ws, { type: 'session_ended', roomCode, reason: 'You ended the session' });
@@ -334,6 +370,148 @@ wss.on('connection', (ws) => {
         // ── PRESENCE ──
         if (msg.type === 'presence') {
             log('PRESENCE', `${deviceId} → ${msg.status}`);
+            return;
+        }
+
+        // ── FILE UPLOAD (initiate file transfer) ──
+        if (msg.type === 'file_upload') {
+            if (!checkRate(connInfo, 'message')) {
+                safeSend(ws, { type: 'error', error: 'Rate limit: too many uploads. Slow down.' });
+                return;
+            }
+            const roomCode = msg.roomCode;
+            const room = rooms.get(roomCode);
+            if (!room) {
+                safeSend(ws, { type: 'error', error: 'Room not found' });
+                return;
+            }
+
+            const fileId = msg.fileId;
+            if (!fileId || typeof fileId !== 'string') {
+                safeSend(ws, { type: 'error', error: 'Missing file ID' });
+                return;
+            }
+
+            // Initialize file storage
+            fileStore.set(fileId, {
+                chunks: [],
+                totalChunks: msg.totalChunks || 1,
+                metadata: msg.encryptedMetadata || null,
+                thumbnail: msg.thumbnail || null,
+                iv: msg.iv || null,
+                hash: msg.hash || null,
+                ephemeral: msg.ephemeral || null,
+                displayCategory: msg.displayCategory || 'documents',
+                expiry: Date.now() + FILE_EXPIRY_MS,
+                roomCode,
+                senderId: deviceId,
+                receivedChunks: 0,
+            });
+
+            log('FILE', `Upload initiated: ${fileId} (${msg.totalChunks} chunks) by ${deviceId}`);
+            safeSend(ws, { type: 'file_upload_ack', fileId, status: 'ready' });
+            return;
+        }
+
+        // ── FILE CHUNK (receive a chunk of encrypted data) ──
+        if (msg.type === 'file_chunk') {
+            const fileId = msg.fileId;
+            const file = fileStore.get(fileId);
+            if (!file) {
+                safeSend(ws, { type: 'error', error: 'File not found — upload first' });
+                return;
+            }
+            if (file.senderId !== deviceId) {
+                safeSend(ws, { type: 'error', error: 'Not authorized to upload chunks for this file' });
+                return;
+            }
+
+            file.chunks.push(msg.data);
+            file.receivedChunks++;
+
+            // Check if all chunks received
+            if (file.receivedChunks >= file.totalChunks) {
+                log('FILE', `Upload complete: ${fileId} (${file.chunks.length} chunks)`);
+
+                // Relay file notification to room peers
+                const room = rooms.get(file.roomCode);
+                if (room) {
+                    room.lastActivity = Date.now();
+                    room.members.forEach(member => {
+                        if (member.deviceId !== deviceId) {
+                            safeSend(member.ws, {
+                                type: 'file_ready',
+                                fileId,
+                                from: deviceId,
+                                deviceId,
+                                totalChunks: file.totalChunks,
+                                iv: file.iv,
+                                hash: file.hash,
+                                encryptedMetadata: file.metadata,
+                                thumbnail: file.thumbnail,
+                                ephemeral: file.ephemeral,
+                                displayCategory: file.displayCategory,
+                            });
+                        }
+                    });
+                }
+
+                safeSend(ws, { type: 'file_upload_complete', fileId });
+            } else {
+                safeSend(ws, { type: 'file_chunk_ack', fileId, received: file.receivedChunks });
+            }
+            return;
+        }
+
+        // ── FILE DOWNLOAD (request file chunks) ──
+        if (msg.type === 'file_download') {
+            const fileId = msg.fileId;
+            const file = fileStore.get(fileId);
+            if (!file) {
+                safeSend(ws, { type: 'error', error: 'File not found or expired' });
+                return;
+            }
+
+            // Verify requester is in the room
+            const room = rooms.get(file.roomCode);
+            if (!room || !room.members.some(m => m.deviceId === deviceId)) {
+                safeSend(ws, { type: 'error', error: 'Not authorized to download this file' });
+                return;
+            }
+
+            // Send file key through E2E channel (included in file_ready message)
+            // Here we just send the encrypted chunks
+            for (let i = 0; i < file.chunks.length; i++) {
+                safeSend(ws, {
+                    type: 'file_chunk_data',
+                    fileId,
+                    chunkIndex: i,
+                    data: file.chunks[i],
+                    totalChunks: file.chunks.length,
+                });
+            }
+            log('FILE', `Download served: ${fileId} → ${deviceId}`);
+            return;
+        }
+
+        // ── FILE DELETE (manual file deletion) ──
+        if (msg.type === 'file_delete') {
+            const fileId = msg.fileId;
+            const file = fileStore.get(fileId);
+            if (file && (file.senderId === deviceId || msg.reason === 'panic_wipe')) {
+                fileStore.delete(fileId);
+                log('FILE', `Deleted: ${fileId} by ${deviceId}`);
+
+                // Notify peers
+                const room = rooms.get(file.roomCode);
+                if (room) {
+                    room.members.forEach(member => {
+                        if (member.deviceId !== deviceId) {
+                            safeSend(member.ws, { type: 'file_deleted', fileId });
+                        }
+                    });
+                }
+            }
             return;
         }
     });
@@ -389,10 +567,10 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ── Start ──
-httpServer.listen(PORT, () => {
-    log('SERVER', `⚡ ADYX Backend running on port ${PORT}`);
-    log('SERVER', `   WebSocket: ws://localhost:${PORT}`);
-    log('SERVER', `   Health:    http://localhost:${PORT}/health`);
+httpServer.listen(PORT, '0.0.0.0', () => {
+    log('SERVER', `ADYX Backend running on port ${PORT}`);
+    log('SERVER', `   WebSocket: ws://0.0.0.0:${PORT}`);
+    log('SERVER', `   Health:    http://0.0.0.0:${PORT}/health`);
     log('SERVER', `   Heartbeat: ${HEARTBEAT_INTERVAL / 1000}s`);
     log('SERVER', `   Room TTL:  ${ROOM_TTL / 60000} min`);
 });

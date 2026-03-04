@@ -3,7 +3,10 @@
 
 import * as e2e from './crypto.js'
 
-const WS_URL = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`
+// In production, connect directly to the Railway backend via env variable
+// In development, use the Vite proxy (/ws → localhost:8443)
+const WS_URL = import.meta.env.VITE_WS_URL
+    || `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`
 
 let socket = null
 let deviceId = null
@@ -77,7 +80,10 @@ export function connect() {
         socket.onmessage = async (event) => {
             try {
                 const msg = JSON.parse(event.data)
-                console.log('[WS] ←', msg.type, msg.type === 'message' ? '(encrypted)' : msg)
+                // Don't log chunk data to avoid flooding console
+                if (msg.type !== 'file_chunk_data' && msg.type !== 'file_chunk_ack') {
+                    console.log('[WS] ←', msg.type, msg.type === 'message' ? '(encrypted)' : msg)
+                }
 
                 if (msg.type === 'auth_ok') {
                     isConnected = true
@@ -106,7 +112,7 @@ export function connect() {
                         console.log('[E2E] Key pair generated (late), public key sent')
                     }
                     await e2e.deriveSharedKey(msg.publicKey)
-                    console.log('[E2E] ✓ Shared key derived — encryption active')
+                    console.log('[E2E] Shared key derived - encryption active')
                     emit('encryption_ready', {})
                     return
                 }
@@ -117,13 +123,42 @@ export function connect() {
                     if (msg.encrypted && msg.iv && e2e.isReady()) {
                         try {
                             plaintext = await e2e.decrypt(msg.payload, msg.iv)
-                            console.log('[E2E] Message decrypted ✓')
+                            console.log('[E2E] Message decrypted')
                         } catch (err) {
                             console.error('[E2E] Decryption failed:', err)
                             plaintext = '[Decryption failed]'
                         }
                     }
                     emit('message', { ...msg, payload: plaintext })
+                    return
+                }
+
+                // ── File Events ──
+                if (msg.type === 'file_ready') {
+                    // Peer sent us a file — need to download chunks + decrypt key
+                    console.log(`[File] File ready from ${msg.deviceId}: ${msg.fileId}`)
+                    emit('file_ready', msg)
+                    return
+                }
+
+                if (msg.type === 'file_chunk_data') {
+                    emit('file_chunk_data', msg)
+                    return
+                }
+
+                if (msg.type === 'file_upload_ack' || msg.type === 'file_upload_complete') {
+                    emit(msg.type, msg)
+                    return
+                }
+
+                if (msg.type === 'file_chunk_ack') {
+                    emit('file_chunk_ack', msg)
+                    return
+                }
+
+                if (msg.type === 'file_deleted') {
+                    console.log(`[File] File deleted: ${msg.fileId}`)
+                    emit('file_deleted', msg)
                     return
                 }
 
@@ -262,7 +297,7 @@ export async function sendMessage(payload, roomCode, messageId) {
     if (e2e.isReady()) {
         try {
             const { ciphertext, iv } = await e2e.encrypt(payload)
-            console.log('[E2E] Message encrypted ✓')
+            console.log('[E2E] Message encrypted')
             return send({
                 type: 'message',
                 roomCode,
@@ -289,6 +324,136 @@ export async function sendMessage(payload, roomCode, messageId) {
 // Send typing indicator
 export function sendTyping(roomCode) {
     return send({ type: 'typing', roomCode })
+}
+
+// ── Secure File Sharing ──
+
+// Pending file downloads: fileId → { chunks[], totalChunks, resolve, reject }
+const pendingDownloads = new Map()
+
+/**
+ * Send an encrypted file to room peers.
+ * Chunks the encrypted data and sends the file key through E2E channel.
+ * 
+ * @param {object} fileData - From FileUploadButton's onFileReady
+ * @param {string} roomCode
+ * @returns {Promise<void>}
+ */
+export async function sendFile(fileData, roomCode) {
+    const { fileId, chunks, totalChunks, iv, hash, keyBase64, encryptedMetadata, thumbnail, ephemeral, displayCategory } = fileData
+
+    // 1. Send file key through E2E encrypted channel as a special message
+    if (e2e.isReady()) {
+        try {
+            const keyMsg = JSON.stringify({
+                type: 'file_key',
+                fileId,
+                keyBase64,
+            })
+            const { ciphertext, iv: keyIv } = await e2e.encrypt(keyMsg)
+            send({
+                type: 'message',
+                roomCode,
+                payload: ciphertext,
+                iv: keyIv,
+                encrypted: true,
+                messageId: `fk_${fileId}`,
+                isFileKey: true  // marker so ChatScreen can intercept
+            })
+            console.log('[File] File key sent through E2E channel')
+        } catch (err) {
+            console.error('[File] Failed to encrypt file key:', err)
+            throw err
+        }
+    }
+
+    // 2. Initiate upload
+    send({
+        type: 'file_upload',
+        fileId,
+        roomCode,
+        totalChunks,
+        iv,
+        hash,
+        encryptedMetadata,
+        thumbnail,
+        ephemeral,
+        displayCategory,
+    })
+
+    // 3. Send chunks
+    for (let i = 0; i < chunks.length; i++) {
+        send({
+            type: 'file_chunk',
+            fileId,
+            chunkIndex: i,
+            data: chunks[i],
+        })
+    }
+
+    console.log(`[File] Sent ${chunks.length} chunks for file ${fileId}`)
+}
+
+/**
+ * Request file download from server.
+ * Returns a promise that resolves with all file chunks.
+ * 
+ * @param {string} fileId
+ * @param {string} roomCode
+ * @param {number} totalChunks
+ * @returns {Promise<string[]>} Array of base64-encoded chunks
+ */
+export function requestFile(fileId, roomCode, totalChunks) {
+    return new Promise((resolve, reject) => {
+        const chunks = []
+        const timeout = setTimeout(() => {
+            pendingDownloads.delete(fileId)
+            reject(new Error('File download timed out'))
+        }, 30000)
+
+        pendingDownloads.set(fileId, {
+            chunks,
+            totalChunks,
+            resolve: (data) => {
+                clearTimeout(timeout)
+                pendingDownloads.delete(fileId)
+                resolve(data)
+            },
+            reject: (err) => {
+                clearTimeout(timeout)
+                pendingDownloads.delete(fileId)
+                reject(err)
+            }
+        })
+
+        // Listen for chunk data
+        const offChunk = on('file_chunk_data', (msg) => {
+            if (msg.fileId !== fileId) return
+            chunks[msg.chunkIndex] = msg.data
+
+            // Check if all chunks received
+            const received = chunks.filter(Boolean).length
+            if (received >= totalChunks) {
+                offChunk()
+                clearTimeout(timeout)
+                pendingDownloads.delete(fileId)
+                resolve(chunks)
+            }
+        })
+
+        // Send download request
+        send({ type: 'file_download', fileId, roomCode })
+    })
+}
+
+/**
+ * Delete a file from server storage.
+ * 
+ * @param {string} fileId
+ * @param {string} reason - 'manual' | 'panic_wipe'
+ */
+export function deleteFile(fileId, reason = 'manual') {
+    return send({ type: 'file_delete', fileId, reason })
 }
 
 // End session — notifies peer via server

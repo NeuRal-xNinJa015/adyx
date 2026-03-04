@@ -107,7 +107,7 @@ export default function SecurityOverlay({ children, sessionId, deviceHash, onSes
                         opacity: 0.5,
                         animation: 'pulse 2s infinite',
                     }}>
-                        🔒
+                        LOCKED
                     </div>
                     <div style={{
                         color: '#ff4444',
@@ -153,7 +153,7 @@ export default function SecurityOverlay({ children, sessionId, deviceHash, onSes
                     color: threatLevel === 'red' ? '#ff4444' : '#ffaa00',
                     border: `1px solid ${threatLevel === 'red' ? 'rgba(255,0,0,0.3)' : 'rgba(255,170,0,0.3)'}`,
                 }}>
-                    ⚠ THREAT: {threatLevel.toUpperCase()}
+                    THREAT: {threatLevel.toUpperCase()}
                 </div>
             )}
 
